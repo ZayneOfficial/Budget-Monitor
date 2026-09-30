@@ -1,38 +1,36 @@
-const API_URL = "http://localhost:3000/api/transactions";
+const API_URL = "/api/transactions";
+
+async function requestJSON(url, options = {}) {
+    const response = await fetch(url, options);
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        throw new Error(result.error || `Request failed (${response.status}).`);
+    }
+
+    return result;
+}
 
 async function getTransactions() {
-    const response = await fetch(API_URL);
-    return await response.json();
+    return requestJSON(API_URL);
 }
 
 async function createTransaction(transaction) {
-    const response = await fetch(API_URL, {
+    return requestJSON(API_URL, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transaction)
     });
-
-    return await response.json();
 }
 
 async function updateTransaction(id, transaction) {
-    const response = await fetch(`${API_URL}/${id}`, {
+    return requestJSON(`${API_URL}/${id}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(transaction)
     });
-
-    return await response.json();
 }
 
 async function deleteTransactionAPI(id) {
-    const response = await fetch(`${API_URL}/${id}`, {
-        method: "DELETE"
-    });
-
-    return await response.json();
+    return requestJSON(`${API_URL}/${id}`, { method: "DELETE" });
 }

@@ -125,11 +125,12 @@ header h1{
 
 }
 
-.card h2{
+.card p{
 
     margin-top:15px;
 
     font-size:32px;
+    font-weight:700;
 
 }
 
@@ -395,6 +396,23 @@ body.dark tbody tr:hover{
 
     color:var(--text);
 
+}
+
+.app-status:not(:empty){
+    margin-bottom:16px;
+    color:var(--income);
+}
+
+.app-status.error{
+    color:var(--expense);
+}
+
+.table-container h2{
+    margin:24px 0 12px;
+}
+
+.dashboard{
+    grid-template-columns:1fr;
 }
 
 @media(max-width:900px){
