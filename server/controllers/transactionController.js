@@ -1,4 +1,4 @@
-const db = require("../db");
+const { Transaction, isValidId } = require("../db");
 
 function validateTransaction(body = {}) {
     const name = typeof body.name === "string" ? body.name.trim() : "";
@@ -32,12 +32,18 @@ function validateTransaction(body = {}) {
         return { error: "A valid transaction date is required." };
     }
 
-    return { values: [name, category, amount, type, transactionDate] };
+    return { values: { name, category, amount, type, transaction_date: transactionDate } };
 }
 
-function parseId(value) {
-    const id = Number(value);
-    return Number.isInteger(id) && id > 0 ? id : null;
+function serializeTransaction(transaction) {
+    return {
+        id: transaction._id.toString(),
+        name: transaction.name,
+        category: transaction.category,
+        amount: transaction.amount,
+        type: transaction.type,
+        transaction_date: transaction.transaction_date
+    };
 }
 
 function handleDatabaseError(res, error) {
@@ -45,46 +51,37 @@ function handleDatabaseError(res, error) {
     return res.status(500).json({ error: "The transaction could not be saved." });
 }
 
-exports.getTransactions = (req, res) => {
-    db.query(
-        "SELECT * FROM transactions ORDER BY transaction_date DESC, id DESC",
-        (error, results) => {
-            if (error) {
-                return handleDatabaseError(res, error);
-            }
-
-            return res.json(results);
-        }
-    );
+exports.getTransactions = async (req, res) => {
+    try {
+        const transactions = await Transaction.find()
+            .sort({ transaction_date: -1, _id: -1 })
+            .lean();
+        return res.json(transactions.map(serializeTransaction));
+    } catch (error) {
+        return handleDatabaseError(res, error);
+    }
 };
 
-exports.addTransaction = (req, res) => {
+exports.addTransaction = async (req, res) => {
     const validation = validateTransaction(req.body);
     if (validation.error) {
         return res.status(400).json({ error: validation.error });
     }
 
-    db.query(
-        `INSERT INTO transactions (name, category, amount, type, transaction_date)
-         VALUES (?, ?, ?, ?, ?)`,
-        validation.values,
-        (error, result) => {
-            if (error) {
-                return handleDatabaseError(res, error);
-            }
-
-            return res.status(201).json({
-                success: true,
-                message: "Transaction added successfully.",
-                id: result.insertId
-            });
-        }
-    );
+    try {
+        const transaction = await Transaction.create(validation.values);
+        return res.status(201).json({
+            success: true,
+            message: "Transaction added successfully.",
+            id: transaction._id.toString()
+        });
+    } catch (error) {
+        return handleDatabaseError(res, error);
+    }
 };
 
-exports.updateTransaction = (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) {
+exports.updateTransaction = async (req, res) => {
+    if (!isValidId(req.params.id)) {
         return res.status(400).json({ error: "A valid transaction ID is required." });
     }
 
@@ -93,38 +90,35 @@ exports.updateTransaction = (req, res) => {
         return res.status(400).json({ error: validation.error });
     }
 
-    db.query(
-        `UPDATE transactions
-         SET name = ?, category = ?, amount = ?, type = ?, transaction_date = ?
-         WHERE id = ?`,
-        [...validation.values, id],
-        (error, result) => {
-            if (error) {
-                return handleDatabaseError(res, error);
-            }
-            if (result.affectedRows === 0) {
-                return res.status(404).json({ error: "Transaction not found." });
-            }
-
-            return res.json({ success: true, message: "Transaction updated successfully." });
+    try {
+        const transaction = await Transaction.findByIdAndUpdate(
+            req.params.id,
+            validation.values,
+            { new: true, runValidators: true }
+        );
+        if (!transaction) {
+            return res.status(404).json({ error: "Transaction not found." });
         }
-    );
+
+        return res.json({ success: true, message: "Transaction updated successfully." });
+    } catch (error) {
+        return handleDatabaseError(res, error);
+    }
 };
 
-exports.deleteTransaction = (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) {
+exports.deleteTransaction = async (req, res) => {
+    if (!isValidId(req.params.id)) {
         return res.status(400).json({ error: "A valid transaction ID is required." });
     }
 
-    db.query("DELETE FROM transactions WHERE id = ?", [id], (error, result) => {
-        if (error) {
-            return handleDatabaseError(res, error);
-        }
-        if (result.affectedRows === 0) {
+    try {
+        const transaction = await Transaction.findByIdAndDelete(req.params.id);
+        if (!transaction) {
             return res.status(404).json({ error: "Transaction not found." });
         }
 
         return res.json({ success: true, message: "Transaction deleted successfully." });
-    });
+    } catch (error) {
+        return handleDatabaseError(res, error);
+    }
 };

@@ -1,24 +1,30 @@
 const path = require("path");
-const mysql = require("mysql2");
+const mongoose = require("mongoose");
 
 require("dotenv").config({ path: path.join(__dirname, ".env") });
 
-const requiredSettings = ["DB_HOST", "DB_USER", "DB_NAME"];
-const missingSettings = requiredSettings.filter((setting) => !process.env[setting]);
-
-if (missingSettings.length > 0) {
-    throw new Error(`Missing database settings: ${missingSettings.join(", ")}`);
+if (!process.env.MONGODB_URI) {
+    throw new Error("Missing database setting: MONGODB_URI");
 }
 
-const connection = mysql.createPool({
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD || "",
-    database: process.env.DB_NAME,
-    port: Number(process.env.DB_PORT || 3306),
-    waitForConnections: true,
-    connectionLimit: 10,
-    ssl: process.env.DB_SSL === "true" ? { rejectUnauthorized: true } : undefined
+const transactionSchema = new mongoose.Schema({
+    name: { type: String, required: true, maxlength: 255 },
+    category: { type: String, required: true, maxlength: 100 },
+    amount: { type: Number, required: true, min: 0 },
+    type: { type: String, required: true, enum: ["income", "expense"] },
+    transaction_date: { type: String, required: true }
+}, {
+    versionKey: false
 });
 
-module.exports = connection;
+transactionSchema.index({ transaction_date: -1, _id: -1 });
+
+const Transaction = mongoose.model("Transaction", transactionSchema);
+
+module.exports = {
+    Transaction,
+    connect: () => mongoose.connect(process.env.MONGODB_URI),
+    ping: () => mongoose.connection.db.admin().ping(),
+    disconnect: () => mongoose.disconnect(),
+    isValidId: (id) => /^[a-f\d]{24}$/i.test(id)
+};

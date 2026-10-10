@@ -1,23 +1,17 @@
 # Budget Monitor
 
-A small Express and MySQL application for recording income and expenses. Express serves the browser client and the API from the same origin.
+A small Express and MongoDB application for recording income and expenses. Express serves the browser client and the API from the same origin.
 
 ## Requirements
 
-- Node.js 20 or newer
-- MySQL 8 or a compatible managed MySQL service
+- Node.js 20.19.0 or newer
+- MongoDB 6 or newer, locally or through a managed MongoDB service
 
 ## Local Setup
 
-1. Create the database and table:
-
-   ```bash
-   mysql -u root -p < server/schema.sql
-   ```
-
-2. Create a MySQL user for the application and grant it access to `budget_monitor`. Do not use the MySQL root account for the app.
-3. Copy `server/.env.example` to `server/.env` and enter the database connection values. Keep `server/.env` private and out of version control.
-4. Install and start the server:
+1. Install and run MongoDB locally, or create a database with a managed MongoDB provider.
+2. Copy `server/.env.example` to `server/.env` and set `MONGODB_URI` to the connection string for your MongoDB deployment. Keep `server/.env` private and out of version control.
+3. Install and start the server:
 
    ```bash
    cd server
@@ -25,7 +19,7 @@ A small Express and MySQL application for recording income and expenses. Express
    npm start
    ```
 
-5. Open `http://localhost:3000`. The database-backed health check is at `http://localhost:3000/api/health`.
+4. Open `http://localhost:3000`. The database-backed health check is at `http://localhost:3000/api/health`.
 
 For development with automatic restarts, run `npm run dev` from `server/`.
 
@@ -33,7 +27,7 @@ For development with automatic restarts, run `npm run dev` from `server/`.
 
 Deploy the repository as one Node.js web service so Express can serve both `client/` and `/api`. Set the service's install command to `cd server && npm ci` and its start command to `cd server && npm start`. The server uses the hosting provider's `PORT` value automatically.
 
-Provision a managed MySQL database separately, then configure `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, and `DB_PORT` as private environment variables on the web service. Set `DB_SSL=true` when the database provider requires TLS. Apply `server/schema.sql` to that database before starting the app, and allow the web service to connect through the provider's network or IP allowlist settings.
+Provision a managed MongoDB database separately, then configure `MONGODB_URI` as a private environment variable on the web service. Ensure the service is allowed to connect through the provider's network or IP allowlist settings. The application creates its transaction collection and indexes automatically.
 
 If hosting the client on a separate origin, configure `CLIENT_ORIGIN` to that exact origin and update the client's API base path for that deployment. The default setup intentionally uses same-origin relative API URLs.
 
