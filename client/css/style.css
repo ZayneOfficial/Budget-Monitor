@@ -187,12 +187,12 @@ form button{
 table{
 
     width:100%;
+    min-width:760px;
 
     border-collapse:collapse;
 
     background:var(--card);
     color:var(--text);
-    box-shadow:0 5px 15px rgba(0,0,0,.1);
 
 }
 
@@ -323,48 +323,47 @@ body.dark tbody tr:hover{
 }
 .table-container{
 
+    min-width:0;
+
+}
+
+.table-scroll{
     overflow-x:auto;
-
-}
-
-.dashboard{
-
-    display:grid;
-
-    grid-template-columns:2fr 1fr;
-
-    gap:30px;
-
-    margin-top:30px;
-
-}
-
-.chart-section{
-
+    overscroll-behavior-x:contain;
+    border-radius:12px;
     background:var(--card);
-
-    padding:20px;
-
-    border-radius:15px;
-
     box-shadow:0 5px 15px rgba(0,0,0,.1);
-
-    text-align:center;
-
+    scrollbar-color:var(--primary) var(--table-row-alt);
+    scrollbar-width:thin;
+    -webkit-overflow-scrolling:touch;
 }
 
-.chart-section h2{
-
-    margin-bottom:20px;
-
+.table-scroll:focus-visible{
+    outline:3px solid var(--primary);
+    outline-offset:3px;
 }
 
-.chart-section canvas{
+.table-scroll::-webkit-scrollbar{
+    height:10px;
+}
 
-    width:100% !important;
+.table-scroll::-webkit-scrollbar-track{
+    background:var(--table-row-alt);
+}
 
-    max-height:350px;
+.table-scroll::-webkit-scrollbar-thumb{
+    background:var(--primary);
+    border:2px solid var(--table-row-alt);
+    border-radius:999px;
+}
 
+th,
+td{
+    white-space:nowrap;
+}
+
+.actions{
+    min-width:165px;
 }
 
 .filters{
@@ -409,20 +408,6 @@ body.dark tbody tr:hover{
 
 .table-container h2{
     margin:24px 0 12px;
-}
-
-.dashboard{
-    grid-template-columns:1fr;
-}
-
-@media(max-width:900px){
-
-.dashboard{
-
-grid-template-columns:1fr;
-
-}
-
 }
 
 @media(max-width:768px){

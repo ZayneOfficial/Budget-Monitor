@@ -41,8 +41,6 @@ function App() {
 	const [monthFilter, setMonthFilter] = React.useState(localDateParts().month);
 	const [darkMode, setDarkMode] = React.useState(() => localStorage.getItem("theme") === "dark");
 	const [formData, setFormData] = React.useState(getDefaultFormState());
-	const chartRef = React.useRef(null);
-	const chartInstanceRef = React.useRef(null);
 
 	const categories = React.useMemo(() => {
 		return [...new Set(transactions.map((transaction) => transaction.category).filter(Boolean))]
@@ -74,48 +72,6 @@ function App() {
 		document.body.classList.toggle("dark", darkMode);
 		localStorage.setItem("theme", darkMode ? "dark" : "light");
 	}, [darkMode]);
-
-	React.useEffect(() => {
-		if (!window.Chart || !chartRef.current) {
-			return;
-		}
-
-		const totalsByCategory = new Map();
-		visibleTransactions
-			.filter((transaction) => transaction.type === "expense")
-			.forEach((transaction) => {
-				totalsByCategory.set(
-					transaction.category,
-					(totalsByCategory.get(transaction.category) || 0) + Number(transaction.amount)
-				);
-			});
-
-		if (chartInstanceRef.current) {
-			chartInstanceRef.current.destroy();
-		}
-
-		chartInstanceRef.current = new Chart(chartRef.current, {
-			type: "doughnut",
-			data: {
-				labels: [...totalsByCategory.keys()],
-				datasets: [{
-					data: [...totalsByCategory.values()],
-					backgroundColor: ["#2563eb", "#16a34a", "#dc2626", "#f59e0b", "#06b6d4", "#ec4899", "#64748b"]
-				}]
-			},
-			options: {
-				responsive: true,
-				plugins: { legend: { position: "bottom" } }
-			}
-		});
-
-		return () => {
-			if (chartInstanceRef.current) {
-				chartInstanceRef.current.destroy();
-				chartInstanceRef.current = null;
-			}
-		};
-	}, [visibleTransactions]);
 
 	async function loadTransactions() {
 		try {
@@ -252,48 +208,43 @@ function App() {
 				<input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} aria-label="Filter by month" />
 			</section>
 
-			<section className="dashboard">
-				<div className="chart-section">
-					<h2>Expenses by Category</h2>
-					<canvas ref={chartRef} aria-label="Expenses by category chart" />
-				</div>
-			</section>
-
 			<section className="table-container">
 				<h2>Transactions</h2>
-				<table>
-					<thead>
-						<tr>
-							<th scope="col">Name</th>
-							<th scope="col">Category</th>
-							<th scope="col">Amount</th>
-							<th scope="col">Type</th>
-							<th scope="col">Date</th>
-							<th scope="col">Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{visibleTransactions.length === 0 ? (
+				<div className="table-scroll" role="region" aria-label="Transactions table" tabIndex="0">
+					<table>
+						<thead>
 							<tr>
-								<td colSpan="6">No transactions match these filters.</td>
+								<th scope="col">Name</th>
+								<th scope="col">Category</th>
+								<th scope="col">Amount</th>
+								<th scope="col">Type</th>
+								<th scope="col">Date</th>
+								<th scope="col">Actions</th>
 							</tr>
-						) : (
-							visibleTransactions.map((transaction) => (
-								<tr key={transaction.id}>
-									<td>{transaction.name}</td>
-									<td>{transaction.category}</td>
-									<td>{currencyFormatter.format(Number(transaction.amount))}</td>
-									<td>{transaction.type}</td>
-									<td>{formatTransactionDate(transaction.transaction_date)}</td>
-									<td className="actions">
-										<button type="button" className="edit-btn" aria-label={`Edit ${transaction.name}`} onClick={() => beginEdit(transaction)}>Edit</button>
-										<button type="button" className="delete-btn" aria-label={`Delete ${transaction.name}`} onClick={() => removeTransaction(transaction)}>Delete</button>
-									</td>
+						</thead>
+						<tbody>
+							{visibleTransactions.length === 0 ? (
+								<tr>
+									<td colSpan="6">No transactions match these filters.</td>
 								</tr>
-							))
-						)}
-					</tbody>
-				</table>
+							) : (
+								visibleTransactions.map((transaction) => (
+									<tr key={transaction.id}>
+										<td>{transaction.name}</td>
+										<td>{transaction.category}</td>
+										<td>{currencyFormatter.format(Number(transaction.amount))}</td>
+										<td>{transaction.type}</td>
+										<td>{formatTransactionDate(transaction.transaction_date)}</td>
+										<td className="actions">
+											<button type="button" className="edit-btn" aria-label={`Edit ${transaction.name}`} onClick={() => beginEdit(transaction)}>Edit</button>
+											<button type="button" className="delete-btn" aria-label={`Delete ${transaction.name}`} onClick={() => removeTransaction(transaction)}>Delete</button>
+										</td>
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
 			</section>
 		</main>
 	);
