@@ -1,6 +1,6 @@
 # Budget Monitor
 
-A small Express and MongoDB application for recording income and expenses. Express serves the browser client and the API from the same origin.
+A small Express and MongoDB application for recording income and expenses. Express serves the browser client and the API from the same origin, and the front-end is built with React.
 
 ## Requirements
 
