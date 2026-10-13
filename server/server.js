@@ -5,6 +5,8 @@ const path = require("path");
 const db = require("./db");
 
 const transactionRoutes = require("./routes/transactionRoutes");
+const authRoutes = require("./routes/authRoutes");
+const { requireAuth } = require("./auth");
 
 const app = express();
 
@@ -13,7 +15,8 @@ if (process.env.CLIENT_ORIGIN) {
 }
 
 app.use(express.json({ limit: "10kb" }));
-app.use("/api/transactions", transactionRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/transactions", requireAuth, transactionRoutes);
 app.get("/api/health", async (req, res) => {
     try {
         await db.ping();

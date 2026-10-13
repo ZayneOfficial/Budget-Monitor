@@ -54,6 +54,7 @@ function handleDatabaseError(res, error) {
 exports.getTransactions = async (req, res) => {
     try {
         const transactions = await Transaction.find()
+            .where({ userId: req.userId })
             .sort({ transaction_date: -1, _id: -1 })
             .lean();
         return res.json(transactions.map(serializeTransaction));
@@ -69,7 +70,7 @@ exports.addTransaction = async (req, res) => {
     }
 
     try {
-        const transaction = await Transaction.create(validation.values);
+        const transaction = await Transaction.create({ ...validation.values, userId: req.userId });
         return res.status(201).json({
             success: true,
             message: "Transaction added successfully.",
@@ -91,8 +92,8 @@ exports.updateTransaction = async (req, res) => {
     }
 
     try {
-        const transaction = await Transaction.findByIdAndUpdate(
-            req.params.id,
+        const transaction = await Transaction.findOneAndUpdate(
+            { _id: req.params.id, userId: req.userId },
             validation.values,
             { new: true, runValidators: true }
         );
@@ -112,7 +113,7 @@ exports.deleteTransaction = async (req, res) => {
     }
 
     try {
-        const transaction = await Transaction.findByIdAndDelete(req.params.id);
+        const transaction = await Transaction.findOneAndDelete({ _id: req.params.id, userId: req.userId });
         if (!transaction) {
             return res.status(404).json({ error: "Transaction not found." });
         }

@@ -1,14 +1,40 @@
 const API_URL = "/api/transactions";
+const AUTH_URL = "/api/auth";
 
 async function requestJSON(url, options = {}) {
     const response = await fetch(url, options);
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-        throw new Error(result.error || `Request failed (${response.status}).`);
+        const error = new Error(result.error || `Request failed (${response.status}).`);
+        error.status = response.status;
+        throw error;
     }
 
     return result;
+}
+
+async function getCurrentUser() {
+    try {
+        return (await requestJSON(`${AUTH_URL}/me`)).user;
+    } catch (error) {
+        if (error.status === 401) {
+            return null;
+        }
+        throw error;
+    }
+}
+
+async function authenticate(action, credentials) {
+    return requestJSON(`${AUTH_URL}/${action}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials)
+    });
+}
+
+async function logout() {
+    return requestJSON(`${AUTH_URL}/logout`, { method: "POST" });
 }
 
 async function getTransactions() {

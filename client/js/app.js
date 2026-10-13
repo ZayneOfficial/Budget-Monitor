@@ -31,6 +31,12 @@ function getDefaultFormState() {
 }
 
 function App() {
+	const [user, setUser] = React.useState(null);
+	const [authLoading, setAuthLoading] = React.useState(true);
+	const [authMode, setAuthMode] = React.useState("login");
+	const [authError, setAuthError] = React.useState("");
+	const [authSubmitting, setAuthSubmitting] = React.useState(false);
+	const [authData, setAuthData] = React.useState({ name: "", email: "", password: "" });
 	const [transactions, setTransactions] = React.useState([]);
 	const [statusMessage, setStatusMessage] = React.useState("");
 	const [statusError, setStatusError] = React.useState(false);
@@ -73,6 +79,13 @@ function App() {
 		localStorage.setItem("theme", darkMode ? "dark" : "light");
 	}, [darkMode]);
 
+	React.useEffect(() => {
+		window.getCurrentUser()
+			.then(setUser)
+			.catch((error) => setAuthError(error.message || "Could not check your session."))
+			.finally(() => setAuthLoading(false));
+	}, []);
+
 	async function loadTransactions() {
 		try {
 			const data = await window.getTransactions();
@@ -80,14 +93,59 @@ function App() {
 			setStatusMessage("");
 			setStatusError(false);
 		} catch (error) {
+			if (error.status === 401) {
+				setUser(null);
+				setTransactions([]);
+				setFormData(getDefaultFormState());
+				setEditingId(null);
+				return;
+			}
 			setStatusMessage(error.message || "Could not load transactions.");
 			setStatusError(true);
 		}
 	}
 
 	React.useEffect(() => {
-		void loadTransactions();
-	}, []);
+		if (user) {
+			void loadTransactions();
+		} else {
+			setTransactions([]);
+		}
+	}, [user]);
+
+	function handleAuthChange(event) {
+		const { name, value } = event.target;
+		setAuthData((current) => ({ ...current, [name]: value }));
+	}
+
+	async function handleAuthSubmit(event) {
+		event.preventDefault();
+		setAuthSubmitting(true);
+		setAuthError("");
+		try {
+			const result = await window.authenticate(authMode, authData);
+			setUser(result.user);
+			setAuthData({ name: "", email: "", password: "" });
+		} catch (error) {
+			setAuthError(error.message || "Could not authenticate.");
+		} finally {
+			setAuthSubmitting(false);
+		}
+	}
+
+	async function handleLogout() {
+		try {
+			await window.logout();
+			setUser(null);
+			setTransactions([]);
+			setFormData(getDefaultFormState());
+			setEditingId(null);
+			setStatusMessage("");
+		} catch (error) {
+			setStatusMessage(error.message || "Could not log out.");
+			setStatusError(true);
+		}
+	}
 
 	function handleFormChange(event) {
 		const { name, value } = event.target;
@@ -147,18 +205,76 @@ function App() {
 		}
 	}
 
+	if (authLoading) {
+		return <main className="auth-shell"><p role="status">Checking your session…</p></main>;
+	}
+
+	if (!user) {
+		return (
+			<main className="auth-shell">
+				<section className="auth-card" aria-labelledby="auth-title">
+					<a className="auth-brand" href="/">Budget Monitor</a>
+					<p className="auth-eyebrow">YOUR MONEY, IN FOCUS</p>
+					<h1 id="auth-title">{authMode === "login" ? "Welcome back" : "Create your account"}</h1>
+					<p className="auth-intro">
+						{authMode === "login"
+							? "Sign in to see your personal budget dashboard."
+							: "Create an account to start tracking your finances."}
+					</p>
+					{authError && <p className="auth-error" role="alert">{authError}</p>}
+					<form className="auth-form" onSubmit={handleAuthSubmit}>
+						{authMode === "register" && (
+							<label>
+								Name
+								<input name="name" type="text" autoComplete="name" value={authData.name} onChange={handleAuthChange} maxLength="100" required />
+							</label>
+						)}
+						<label>
+							Email
+							<input name="email" type="email" autoComplete="email" value={authData.email} onChange={handleAuthChange} maxLength="254" required />
+						</label>
+						<label>
+							Password
+							<input name="password" type="password" autoComplete={authMode === "login" ? "current-password" : "new-password"} value={authData.password} onChange={handleAuthChange} minLength="8" maxLength="128" required />
+							{authMode === "register" && <span className="auth-hint">Use at least 8 characters.</span>}
+						</label>
+						<button type="submit" disabled={authSubmitting}>
+							{authSubmitting ? "Please wait…" : authMode === "login" ? "Sign in" : "Create account"}
+						</button>
+					</form>
+					<p className="auth-switch">
+						{authMode === "login" ? "New to Budget Monitor?" : "Already have an account?"}{" "}
+						<button type="button" onClick={() => {
+							setAuthMode(authMode === "login" ? "register" : "login");
+							setAuthError("");
+							setAuthData({ name: "", email: "", password: "" });
+						}}>
+							{authMode === "login" ? "Create an account" : "Sign in"}
+						</button>
+					</p>
+				</section>
+			</main>
+		);
+	}
+
 	return (
 		<main className="container">
 			<header>
-				<h1>Budget Monitor</h1>
-				<button
-					type="button"
-					id="themeToggle"
-					aria-label="Toggle dark theme"
-					onClick={() => setDarkMode((current) => !current)}
-				>
-					{darkMode ? "☀️" : "🌙"}
-				</button>
+				<div className="dashboard-heading">
+					<h1>Budget Monitor</h1>
+					<p>Welcome, {user.name}</p>
+				</div>
+				<div className="header-actions">
+					<button
+						type="button"
+						id="themeToggle"
+						aria-label="Toggle dark theme"
+						onClick={() => setDarkMode((current) => !current)}
+					>
+						{darkMode ? "☀️" : "🌙"}
+					</button>
+					<button type="button" className="logout-btn" onClick={handleLogout}>Sign out</button>
+				</div>
 			</header>
 
 			<p className={`app-status${statusError ? " error" : ""}`} role="status" aria-live="polite">

@@ -11,6 +11,7 @@ A small Express and MongoDB application for recording income and expenses. Expre
 
 1. Install and run MongoDB locally, or create a database with a managed MongoDB provider.
 2. Copy `server/.env.example` to `server/.env` and set `MONGODB_URI` to the connection string for your MongoDB deployment. Keep `server/.env` private and out of version control.
+   Set `SESSION_SECRET` to a private random value of at least 32 characters (for example, generate one with `openssl rand -hex 32`).
 3. Install and start the server:
 
    ```bash
@@ -28,6 +29,8 @@ For development with automatic restarts, run `npm run dev` from `server/`.
 Deploy the repository as one Node.js web service so Express can serve both `client/` and `/api`. Set the service's install command to `cd server && npm ci` and its start command to `cd server && npm start`. The server uses the hosting provider's `PORT` value automatically.
 
 Provision a managed MongoDB database separately, then configure `MONGODB_URI` as a private environment variable on the web service. Ensure the service is allowed to connect through the provider's network or IP allowlist settings. The application creates its transaction collection and indexes automatically.
+
+Users can create an account or sign in from the home page. Sessions use an HTTP-only cookie, and each transaction is only visible to its owner. Passwords are stored as scrypt hashes; never reuse or publish the session secret.
 
 If hosting the client on a separate origin, configure `CLIENT_ORIGIN` to that exact origin and update the client's API base path for that deployment. The default setup intentionally uses same-origin relative API URLs.
 
