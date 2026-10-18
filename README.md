@@ -32,6 +32,8 @@ Provision a managed MongoDB database separately, then configure `MONGODB_URI` as
 
 Users can create an account or sign in from the home page. Sessions use an HTTP-only cookie, and each transaction is only visible to its owner. Passwords are stored as scrypt hashes; never reuse or publish the session secret.
 
+The app can be installed as a PWA from a supported browser's install option. The app shell and scripts loaded while online are cached for offline startup; account and transaction data still require a connection. Service workers require HTTPS in production (localhost is supported for development).
+
 If hosting the client on a separate origin, configure `CLIENT_ORIGIN` to that exact origin and update the client's API base path for that deployment. The default setup intentionally uses same-origin relative API URLs.
 
 ## Tests
