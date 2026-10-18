@@ -213,7 +213,7 @@ function App() {
 		return (
 			<main className="auth-shell">
 				<section className="auth-card" aria-labelledby="auth-title">
-					<a className="auth-brand" href="/">Budget Monitor</a>
+					<a className="auth-brand" href="/">ZAYNE</a>
 					<p className="auth-eyebrow">YOUR MONEY, IN FOCUS</p>
 					<h1 id="auth-title">{authMode === "login" ? "Welcome back" : "Create your account"}</h1>
 					<p className="auth-intro">
@@ -243,7 +243,7 @@ function App() {
 						</button>
 					</form>
 					<p className="auth-switch">
-						{authMode === "login" ? "New to Budget Monitor?" : "Already have an account?"}{" "}
+						{authMode === "login" ? "New to ZAYNE?" : "Already have an account?"}{" "}
 						<button type="button" onClick={() => {
 							setAuthMode(authMode === "login" ? "register" : "login");
 							setAuthError("");
@@ -261,7 +261,7 @@ function App() {
 		<main className="container">
 			<header>
 				<div className="dashboard-heading">
-					<h1>Budget Monitor</h1>
+					<h1>ZAYNE</h1>
 					<p>Welcome, {user.name}</p>
 				</div>
 				<div className="header-actions">

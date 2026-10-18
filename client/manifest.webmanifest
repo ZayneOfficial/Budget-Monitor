@@ -1,7 +1,7 @@
 {
-  "name": "Budget Monitor",
-  "short_name": "Budget Monitor",
-  "description": "Track your income and expenses with Budget Monitor.",
+  "name": "ZAYNE",
+  "short_name": "ZAYNE",
+  "description": "Track your income and expenses with ZAYNE.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
