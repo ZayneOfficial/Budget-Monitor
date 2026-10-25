@@ -14,6 +14,13 @@ function serializeUser(user) {
     };
 }
 
+function isEmailDuplicate(error) {
+    return error.code === 11000 && (
+        error.keyPattern?.email === 1
+        || Object.hasOwn(error.keyValue || {}, "email")
+    );
+}
+
 async function hashPassword(password, salt = crypto.randomBytes(16).toString("hex")) {
     const derivedKey = await scrypt(password, salt, 64);
     return `${salt}:${derivedKey.toString("hex")}`;
@@ -51,10 +58,14 @@ exports.register = async (req, res) => {
         setSessionCookie(res, user._id.toString());
         return res.status(201).json({ user: serializeUser(user) });
     } catch (error) {
-        if (error.code === 11000) {
+        if (isEmailDuplicate(error)) {
             return res.status(409).json({ error: "An account with this email already exists." });
         }
-        console.error("Account registration error:", error.message);
+        if (error.code === 11000) {
+            console.error("Account registration failed due to an unexpected duplicate-key constraint:", error.keyPattern || "unknown index");
+        } else {
+            console.error("Account registration error:", error.message);
+        }
         return res.status(500).json({ error: "Your account could not be created." });
     }
 };
