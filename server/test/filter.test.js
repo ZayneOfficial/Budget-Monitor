@@ -1,6 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { filterTransactions } = require("../../client/js/filter");
+const {
+    filterTransactions,
+    getTransactionMonths,
+    summarizeTransactions
+} = require("../../client/js/filter");
 
 const transactions = [
     { name: "Groceries", category: "Food", amount: 450, type: "expense", transaction_date: "2026-09-04" },
@@ -26,4 +30,25 @@ test("empty filters keep all transactions", () => {
         type: "",
         month: ""
     }).length, transactions.length);
+});
+
+test("available months are separate, newest first, and include current and selected months", () => {
+    assert.deepEqual(
+        getTransactionMonths(transactions, "2026-10", "2026-07"),
+        ["2026-10", "2026-09", "2026-08", "2026-07"]
+    );
+});
+
+test("monthly summaries include every transaction in the selected month", () => {
+    const septemberTransactions = filterTransactions(transactions, {
+        search: "",
+        category: "",
+        type: "",
+        month: "2026-09"
+    });
+
+    assert.deepEqual(summarizeTransactions(septemberTransactions), {
+        income: 0,
+        expense: 480
+    });
 });

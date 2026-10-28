@@ -19,6 +19,12 @@ function formatTransactionDate(value) {
 		: new Intl.DateTimeFormat("en-ZA", { day: "2-digit", month: "short", year: "numeric" }).format(date);
 }
 
+function formatMonthLabel(value) {
+	const [year, month] = value.split("-").map(Number);
+	return new Intl.DateTimeFormat("en-ZA", { month: "long", year: "numeric" })
+		.format(new Date(year, month - 1, 1));
+}
+
 function getDefaultFormState() {
 	const today = localDateParts();
 	return {
@@ -53,6 +59,10 @@ function App() {
 			.sort((left, right) => left.localeCompare(right));
 	}, [transactions]);
 
+	const availableMonths = React.useMemo(() => {
+		return window.getTransactionMonths(transactions, localDateParts().month, monthFilter);
+	}, [transactions, monthFilter]);
+
 	const visibleTransactions = React.useMemo(() => {
 		return window.filterTransactions(transactions, {
 			search,
@@ -62,17 +72,19 @@ function App() {
 		});
 	}, [transactions, search, categoryFilter, typeFilter, monthFilter]);
 
-	const summary = React.useMemo(() => {
-		return visibleTransactions.reduce((totals, transaction) => {
-			const amount = Number(transaction.amount);
-			if (transaction.type === "income") {
-				totals.income += amount;
-			} else {
-				totals.expense += amount;
-			}
-			return totals;
-		}, { income: 0, expense: 0 });
-	}, [visibleTransactions]);
+	const monthTransactions = React.useMemo(() => {
+		return window.filterTransactions(transactions, {
+			search: "",
+			category: "",
+			type: "",
+			month: monthFilter
+		});
+	}, [transactions, monthFilter]);
+
+	const summary = React.useMemo(
+		() => window.summarizeTransactions(monthTransactions),
+		[monthTransactions]
+	);
 
 	React.useEffect(() => {
 		document.body.classList.toggle("dark", darkMode);
@@ -293,17 +305,18 @@ function App() {
 				<button type="submit">{editingId ? "Update Transaction" : "Add Transaction"}</button>
 			</form>
 
-			<section className="summary-cards" aria-label="Budget summary">
+			<section className="summary-cards" aria-label={`Budget summary for ${monthFilter ? formatMonthLabel(monthFilter) : "all months"}`}>
+				<h2 className="summary-heading">{monthFilter ? `${formatMonthLabel(monthFilter)} overview` : "All-time overview"}</h2>
 				<div className="card income-card">
-					<h2>Total Income</h2>
+					<h3>Total Income</h3>
 					<p>{currencyFormatter.format(summary.income)}</p>
 				</div>
 				<div className="card expense-card">
-					<h2>Total Expenses</h2>
+					<h3>Total Expenses</h3>
 					<p>{currencyFormatter.format(summary.expense)}</p>
 				</div>
 				<div className="card balance-card">
-					<h2>Balance</h2>
+					<h3>Balance</h3>
 					<p>{currencyFormatter.format(summary.income - summary.expense)}</p>
 				</div>
 			</section>
@@ -321,11 +334,16 @@ function App() {
 					<option value="income">Income</option>
 					<option value="expense">Expense</option>
 				</select>
-				<input type="month" value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} aria-label="Filter by month" />
+				<select value={monthFilter} onChange={(event) => setMonthFilter(event.target.value)} aria-label="View transactions by month">
+					<option value="">All months</option>
+					{availableMonths.map((month) => (
+						<option key={month} value={month}>{formatMonthLabel(month)}</option>
+					))}
+				</select>
 			</section>
 
 			<section className="table-container">
-				<h2>Transactions</h2>
+				<h2>{monthFilter ? `Transactions for ${formatMonthLabel(monthFilter)}` : "All transactions"}</h2>
 				<div className="table-scroll" role="region" aria-label="Transactions table" tabIndex="0">
 					<table>
 						<thead>
