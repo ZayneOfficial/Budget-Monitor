@@ -32,12 +32,29 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model("User", userSchema);
 
+async function dropLegacyUsernameIndex(collection = User.collection) {
+    const indexes = await collection.indexes();
+    const legacyIndex = indexes.find((index) => (
+        index.name === "username_1"
+        && index.unique === true
+        && Object.keys(index.key || {}).length === 1
+        && index.key.username === 1
+    ));
+
+    if (legacyIndex) {
+        await collection.dropIndex(legacyIndex.name);
+        console.info("Removed obsolete unique username index.");
+    }
+}
+
 module.exports = {
     Transaction,
     User,
+    dropLegacyUsernameIndex,
     connect: async () => {
         await mongoose.connect(process.env.MONGODB_URI);
         await Promise.all([Transaction.init(), User.init()]);
+        await dropLegacyUsernameIndex();
     },
     ping: () => mongoose.connection.db.admin().ping(),
     disconnect: () => mongoose.disconnect(),
